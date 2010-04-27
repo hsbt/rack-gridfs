@@ -13,7 +13,8 @@ module Rack
       options = {
         :hostname => 'localhost', 
         :prefix   => 'gridfs',
-        :port     => Mongo::Connection::DEFAULT_PORT
+        :port     => Mongo::Connection::DEFAULT_PORT,
+        :accessor => 'id'
       }.merge(options)
 
       @app        = app
@@ -21,6 +22,7 @@ module Rack
       @port       = options[:port]
       @database   = options[:database]
       @prefix     = options[:prefix]
+      @accessor   = options[:accessor]
       @db         = nil
 
       connect!
@@ -35,10 +37,14 @@ module Rack
       end
     end
 
-    def gridfs_request(id)
-      file = Mongo::Grid.new(db).get(BSON::ObjectID.from_string(id))
-      [200, {'Content-Type' => file.content_type}, [file.read]]
-    rescue Mongo::GridError, BSON::InvalidObjectID
+    def gridfs_request(path)
+      if @accessor == 'id'
+			file = Mongo::Grid.new(db).get(BSON::ObjectID.from_string(path))
+		elsif @accessor == 'path'
+			file = Mongo::GridFileSystem.new(db).open(path, "r")
+		end
+		[200, {'Content-Type' => file.content_type}, [file.read]]
+    rescue Mongo::GridFileNotFound, Mongo::GridError, BSON::InvalidObjectID
       [404, {'Content-Type' => 'text/plain'}, ['File not found.']]
     end
     
