@@ -8,7 +8,7 @@ class Rack::GridFSTest < Test::Unit::TestCase
   end
   
   def test_database_options
-    { :hostname => 'localhost', :port => 27017, :database => 'test', :prefix => 'gridfs' }
+    { :hostname => 'localhost', :port => 27017, :database => 'test', :prefix => 'gridfs', :accessor => :id }
   end
   
   def db
@@ -24,8 +24,12 @@ class Rack::GridFSTest < Test::Unit::TestCase
   end
 
   def load_artifact(filename, content_type)
-    contents = File.read(File.join(File.dirname(__FILE__), 'artifacts', filename))
+    contents = File.read(artifacts_path(filename))
     Mongo::Grid.new(db).put(contents, :filename => filename, :content_type => content_type)
+  end
+
+  def artifacts_path(filename)
+    File.join(File.dirname(__FILE__), 'artifacts', filename)
   end
 
   context "Rack::GridFS" do
@@ -34,7 +38,7 @@ class Rack::GridFSTest < Test::Unit::TestCase
 
       setup do
         stub_mongodb_connection
-        @options = { :hostname => 'myhostname.mydomain', :port => 8765, :database => 'mydatabase', :prefix => 'myprefix' }
+        @options = { :hostname => 'myhostname.mydomain', :port => 8765, :database => 'mydatabase', :prefix => 'myprefix', :accessor => :id }
       end
 
       should "have a hostname option" do
@@ -75,6 +79,16 @@ class Rack::GridFSTest < Test::Unit::TestCase
       should "have a default prefix" do
         mware = Rack::GridFS.new(nil, @options.except(:prefix))
         assert_equal mware.prefix, 'gridfs'
+      end
+
+      should "have a accessor option" do
+        mware = Rack::GridFS.new(nil, @options)
+        assert_equal mware.accessor, @options[:accessor]
+      end
+
+      should "have a default option" do
+        mware = Rack::GridFS.new(nil, @options.except(:accessor))
+        assert_equal mware.accessor, :id
       end
 
       should "connect to the MongoDB server" do

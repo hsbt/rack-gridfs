@@ -7,13 +7,13 @@ module Rack
 
   class GridFS
 
-    attr_reader :hostname, :port, :database, :prefix, :db
-    
+    attr_reader :hostname, :port, :database, :prefix, :accessor, :db
+
     def initialize(app, options = {})
       options = {
         :hostname => 'localhost', 
-        :prefix   => 'gridfs',
         :port     => Mongo::Connection::DEFAULT_PORT,
+        :prefix   => 'gridfs',
         :accessor => :id
       }.merge(options)
 
